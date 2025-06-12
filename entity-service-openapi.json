@@ -1,0 +1,1226 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "Entity Service API",
+      "description": "The Entity Service API centralizes the management of entities and their representation across different OpenGov systems.\nIt serves as the source of truth for all OpenGov entities and supports searching for entities based on metadata & unique identifiers.\n\n## Authentication\nThis service supports authorization using multiple methods:\n- Auth0 JWT (Authorization: Bearer <token>)\n- Delphius Session Cookie (Cookie: _delphi_session=<cookie_value>)\n- Delphius API Key (Authorization: Token <token>)",
+      "version": "1.0.0",
+      "contact": {
+        "name": "OpenGov API Support",
+        "email": "api-support@opengov.com"
+      }
+    },
+    "servers": [
+      {
+        "url": "https://api.opengov.com",
+        "description": "Production server"
+      },
+      {
+        "url": "https://api-staging.opengov.com",
+        "description": "Staging server"
+      },
+      {
+        "url": "http://localhost:3000",
+        "description": "Development server"
+      }
+    ],
+    "security": [
+      {
+        "bearerAuth": []
+      },
+      {
+        "apiKeyAuth": []
+      },
+      {
+        "cookieAuth": []
+      }
+    ],
+    "paths": {
+      "/api/entity/v1/entities": {
+        "post": {
+          "summary": "Create an Entity",
+          "description": "Creates a new entity with required attributes specific to the OG platform.\nAdditional app local suite identifiers can be specified to link an entity to other suites.",
+          "operationId": "createEntity",
+          "tags": ["Entities"],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateEntityRequest"
+                },
+                "example": {
+                  "name": "Bernalillo County",
+                  "displayName": "The County of Bernalillo",
+                  "entityType": "county",
+                  "parentEntityId": null,
+                  "friendlyId": "bernalillocountynm",
+                  "locale": "en_US",
+                  "fiscalYearStartDate": {
+                    "month": 7,
+                    "day": 12
+                  },
+                  "address": {
+                    "street": "415 Tijeras NW Albuquerque, NM 87102",
+                    "region": "NM",
+                    "country": "US",
+                    "city": "Albuquerque",
+                    "zipcode": "87102"
+                  },
+                  "population": 23221,
+                  "coordinates": {
+                    "longitude": 121.40,
+                    "latitude": 78.90
+                  },
+                  "active": true
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Entity created successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "$ref": "#/components/responses/BadRequest"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+            "409": {
+              "$ref": "#/components/responses/Conflict"
+            }
+          }
+        },
+        "get": {
+          "summary": "List Entities",
+          "description": "Get a list of entities the user has access to based on their authentication.\nThe user will be identified based on the cookie in the request header.",
+          "operationId": "listEntities",
+          "tags": ["Entities"],
+          "responses": {
+            "200": {
+              "description": "List of entities retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "entities": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/EntityResponse"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities/{entityId}": {
+        "get": {
+          "summary": "Read an Entity",
+          "description": "Get an entity by its UUID",
+          "operationId": "getEntityById",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "$ref": "#/components/parameters/entityId"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        },
+        "patch": {
+          "summary": "Update an Entity",
+          "description": "Update an entity's attributes. The request payload will be merged into the entity object.\nCertain fields require OG admin role: federatedServiceIds, friendlyId, fiscalYearStartDate",
+          "operationId": "updateEntity",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "$ref": "#/components/parameters/entityId"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateEntityRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Entity updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "$ref": "#/components/responses/BadRequest"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Delete an Entity",
+          "description": "Soft delete an entity using its UUID.\nThis endpoint requires OG admin role.",
+          "operationId": "deleteEntity",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "$ref": "#/components/parameters/entityId"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity deleted successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities:byCitCommunityId/{citCommunityId}": {
+        "get": {
+          "summary": "Get Entity by CIT Community ID",
+          "description": "Find an entity by its CIT Community ID",
+          "operationId": "getEntityByCitCommunityId",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "name": "citCommunityId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "The CIT Community ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities:byFinancialsCustomerId/{financialsCustomerId}": {
+        "get": {
+          "summary": "Get Entity by Financials Customer ID",
+          "description": "Find an entity by its Financials Customer ID",
+          "operationId": "getEntityByFinancialsCustomerId",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "name": "financialsCustomerId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "The Financials Customer ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities:byFriendlyId/{friendlyId}": {
+        "get": {
+          "summary": "Get Entity by Friendly ID",
+          "description": "Find an entity by its friendly ID (subdomain)",
+          "operationId": "getEntityByFriendlyId",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "name": "friendlyId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "The friendly ID (subdomain)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities:byCkanCustomerId/{ckanCustomerId}": {
+        "get": {
+          "summary": "Get Entity by CKAN Customer ID",
+          "description": "Find an entity by its CKAN Customer ID",
+          "operationId": "getEntityByCkanCustomerId",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "name": "ckanCustomerId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "The CKAN Customer ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities:byOthPortalId/{othPortalId}": {
+        "get": {
+          "summary": "Get Entity by OTH Portal ID",
+          "description": "Find an entity by its OTH Portal ID",
+          "operationId": "getEntityByOthPortalId",
+          "tags": ["Entities"],
+          "parameters": [
+            {
+              "name": "othPortalId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "The OTH Portal ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Entity retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EntityResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities/{entityId}/sso/toggle": {
+        "post": {
+          "summary": "Toggle Entity SSO",
+          "description": "Enable or disable SSO for an entity",
+          "operationId": "toggleEntitySSO",
+          "tags": ["Entity SSO"],
+          "parameters": [
+            {
+              "$ref": "#/components/parameters/entityId"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "SSO toggled successfully"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            },
+            "403": {
+              "$ref": "#/components/responses/Forbidden"
+            },
+            "404": {
+              "$ref": "#/components/responses/NotFound"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities/types": {
+        "get": {
+          "summary": "Get Entity Types",
+          "description": "Get all available entity types",
+          "operationId": "getEntityTypes",
+          "tags": ["Configuration"],
+          "responses": {
+            "200": {
+              "description": "Entity types retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "entityTypes": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/EntityType"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities/countries": {
+        "get": {
+          "summary": "Get Entity Countries",
+          "description": "Get all available countries",
+          "operationId": "getEntityCountries",
+          "tags": ["Configuration"],
+          "responses": {
+            "200": {
+              "description": "Countries retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "countries": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Country"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities/regions": {
+        "get": {
+          "summary": "Get Entity Regions",
+          "description": "Get regions for a specific country",
+          "operationId": "getEntityRegions",
+          "tags": ["Configuration"],
+          "parameters": [
+            {
+              "name": "country",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Country code (e.g., US, CA)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Regions retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "regions": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Region"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "$ref": "#/components/responses/BadRequest"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/entities/partners": {
+        "get": {
+          "summary": "Get Entity Partners",
+          "description": "Get all available partner entities",
+          "operationId": "getEntityPartners",
+          "tags": ["Configuration"],
+          "responses": {
+            "200": {
+              "description": "Partners retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Partner"
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/entity/v1/graphql": {
+        "post": {
+          "summary": "GraphQL Endpoint",
+          "description": "Execute GraphQL queries and mutations",
+          "operationId": "graphql",
+          "tags": ["GraphQL"],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["query"],
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "description": "GraphQL query or mutation"
+                    },
+                    "variables": {
+                      "type": "object",
+                      "description": "GraphQL variables"
+                    },
+                    "operationName": {
+                      "type": "string",
+                      "description": "Operation name"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "GraphQL response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object"
+                      },
+                      "errors": {
+                        "type": "array",
+                        "items": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "$ref": "#/components/responses/BadRequest"
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT",
+          "description": "Auth0 JWT token"
+        },
+        "apiKeyAuth": {
+          "type": "apiKey",
+          "in": "header",
+          "name": "Authorization",
+          "description": "Delphius API Key (format: Token <token>)"
+        },
+        "cookieAuth": {
+          "type": "apiKey",
+          "in": "cookie",
+          "name": "_delphi_session",
+          "description": "Delphius Session Cookie"
+        }
+      },
+      "parameters": {
+        "entityId": {
+          "name": "entityId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "The entity UUID"
+        }
+      },
+      "schemas": {
+        "CreateEntityRequest": {
+          "type": "object",
+          "required": [
+            "name",
+            "displayName",
+            "entityType",
+            "friendlyId",
+            "locale",
+            "fiscalYearStartDate",
+            "address"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The official name of the entity (census name)",
+              "example": "Bernalillo County"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "The display name of the entity",
+              "example": "The County of Bernalillo"
+            },
+            "entityType": {
+              "type": "string",
+              "description": "A type to categorize entities",
+              "example": "county"
+            },
+            "parentEntityId": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true,
+              "description": "A UUID to identify a partner entity"
+            },
+            "friendlyId": {
+              "type": "string",
+              "description": "A URL-friendly ID (renamed from subdomain)",
+              "pattern": "^[a-z0-9]*$",
+              "example": "bernalillocountynm"
+            },
+            "locale": {
+              "type": "string",
+              "description": "Locale setting",
+              "example": "en_US"
+            },
+            "fiscalYearStartDate": {
+              "$ref": "#/components/schemas/FiscalYearStartDate"
+            },
+            "address": {
+              "$ref": "#/components/schemas/Address"
+            },
+            "contact": {
+              "$ref": "#/components/schemas/Contact"
+            },
+            "federatedServiceIds": {
+              "$ref": "#/components/schemas/FederatedServiceIds"
+            },
+            "thirdPartyIds": {
+              "$ref": "#/components/schemas/ThirdPartyIds"
+            },
+            "population": {
+              "type": "integer",
+              "description": "Population count",
+              "example": 23221
+            },
+            "coordinates": {
+              "$ref": "#/components/schemas/Coordinates"
+            },
+            "active": {
+              "type": "boolean",
+              "default": true,
+              "description": "Whether the entity is active"
+            },
+            "classic": {
+              "$ref": "#/components/schemas/ClassicInput"
+            },
+            "auth0SsoConnectionName": {
+              "type": "string",
+              "description": "Auth0 SSO connection name"
+            }
+          }
+        },
+        "UpdateEntityRequest": {
+          "type": "object",
+          "description": "All fields are optional to mimic PATCH semantics",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "The official name of the entity",
+              "pattern": "^[a-zA-Z0-9 ]+$"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "The display name of the entity",
+              "pattern": "^[a-zA-Z0-9 ]+$"
+            },
+            "entityType": {
+              "type": "string",
+              "description": "A type to categorize entities",
+              "pattern": "^[a-zA-Z_]+$"
+            },
+            "parentEntityId": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true
+            },
+            "friendlyId": {
+              "type": "string",
+              "description": "A URL-friendly ID",
+              "pattern": "^[a-z0-9]*$"
+            },
+            "locale": {
+              "type": "string"
+            },
+            "fiscalYearStartDate": {
+              "$ref": "#/components/schemas/FiscalYearStartDate"
+            },
+            "address": {
+              "$ref": "#/components/schemas/Address"
+            },
+            "federatedServiceIds": {
+              "$ref": "#/components/schemas/FederatedServiceIds"
+            },
+            "thirdPartyIds": {
+              "$ref": "#/components/schemas/ThirdPartyIds"
+            },
+            "population": {
+              "type": "integer"
+            },
+            "coordinates": {
+              "$ref": "#/components/schemas/Coordinates"
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "classic": {
+              "$ref": "#/components/schemas/ClassicInput"
+            },
+            "auth0SsoConnectionName": {
+              "type": "string"
+            }
+          }
+        },
+        "EntityResponse": {
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "displayName",
+            "entityType",
+            "friendlyId",
+            "locale",
+            "fiscalYearStartDate",
+            "address",
+            "population",
+            "coordinates",
+            "federatedServiceIds",
+            "thirdPartyIds",
+            "active",
+            "classic",
+            "createdAt",
+            "updatedAt"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Entity UUID"
+            },
+            "name": {
+              "type": "string",
+              "description": "The official name of the entity"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "The display name of the entity"
+            },
+            "entityType": {
+              "type": "string",
+              "description": "Entity type"
+            },
+            "parentEntityId": {
+              "type": "string",
+              "format": "uuid",
+              "nullable": true
+            },
+            "friendlyId": {
+              "type": "string",
+              "description": "URL-friendly ID"
+            },
+            "locale": {
+              "type": "string"
+            },
+            "fiscalYearStartDate": {
+              "$ref": "#/components/schemas/FiscalYearStartDate"
+            },
+            "address": {
+              "$ref": "#/components/schemas/Address"
+            },
+            "population": {
+              "type": "integer"
+            },
+            "coordinates": {
+              "$ref": "#/components/schemas/Coordinates"
+            },
+            "thirdPartyIds": {
+              "$ref": "#/components/schemas/ThirdPartyIds"
+            },
+            "federatedServiceIds": {
+              "$ref": "#/components/schemas/FederatedServiceIds"
+            },
+            "active": {
+              "type": "boolean"
+            },
+            "classic": {
+              "$ref": "#/components/schemas/Classic"
+            },
+            "auth0SsoConnectionName": {
+              "type": "string"
+            },
+            "allowedActions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AllowedAction"
+              }
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "FiscalYearStartDate": {
+          "type": "object",
+          "required": ["month", "day"],
+          "properties": {
+            "month": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12,
+              "description": "Month (1-12)"
+            },
+            "day": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31,
+              "description": "Day of month"
+            }
+          }
+        },
+        "Address": {
+          "type": "object",
+          "required": ["street", "region", "country"],
+          "properties": {
+            "street": {
+              "type": "string",
+              "description": "Street address"
+            },
+            "region": {
+              "type": "string",
+              "description": "State, province, or other principal subdivision"
+            },
+            "country": {
+              "type": "string",
+              "description": "Country code"
+            },
+            "city": {
+              "type": "string",
+              "description": "City name"
+            },
+            "floor": {
+              "type": "string",
+              "description": "Floor/suite/room"
+            },
+            "zipcode": {
+              "type": "string",
+              "description": "Zipcode (5 digits)",
+              "pattern": "^[0-9]{5}$"
+            }
+          }
+        },
+        "Contact": {
+          "type": "object",
+          "properties": {
+            "phoneNumber": {
+              "type": "string",
+              "description": "Phone number",
+              "example": "123-234-3453"
+            },
+            "phoneExtension": {
+              "type": "string",
+              "description": "Phone extension",
+              "example": "234"
+            }
+          }
+        },
+        "FederatedServiceIds": {
+          "type": "object",
+          "properties": {
+            "citCommunityId": {
+              "type": "string",
+              "nullable": true,
+              "description": "CIT Community ID",
+              "pattern": "^[a-z-]+$"
+            },
+            "financialsCustomerId": {
+              "type": "string",
+              "nullable": true,
+              "description": "Financials Customer ID",
+              "pattern": "^[a-z]+$"
+            },
+            "othPortalId": {
+              "type": "string",
+              "nullable": true,
+              "description": "OTH Portal ID",
+              "pattern": "^[0-9]+$"
+            },
+            "ckanCustomerId": {
+              "type": "string",
+              "nullable": true,
+              "description": "CKAN Customer ID",
+              "pattern": "^[a-z]+$"
+            },
+            "procurementId": {
+              "type": "string",
+              "nullable": true,
+              "description": "Procurement ID"
+            },
+            "assetManagementId": {
+              "type": "string",
+              "nullable": true,
+              "description": "Asset Management ID"
+            }
+          }
+        },
+        "ThirdPartyIds": {
+          "type": "object",
+          "properties": {
+            "salesforceId": {
+              "type": "string",
+              "description": "Salesforce ID for analytics & tracking",
+              "pattern": "^[a-zA-Z0-9]+$"
+            }
+          }
+        },
+        "Coordinates": {
+          "type": "object",
+          "properties": {
+            "longitude": {
+              "type": "number",
+              "format": "float",
+              "nullable": true,
+              "description": "Longitude coordinate"
+            },
+            "latitude": {
+              "type": "number",
+              "format": "float",
+              "nullable": true,
+              "description": "Latitude coordinate"
+            }
+          }
+        },
+        "ClassicInput": {
+          "type": "object",
+          "properties": {
+            "homePageUrl": {
+              "type": "string",
+              "description": "Entity's external homepage URL"
+            }
+          }
+        },
+        "Classic": {
+          "type": "object",
+          "properties": {
+            "emblem": {
+              "type": "string",
+              "description": "URL of the entity's official emblem"
+            },
+            "customDomain": {
+              "type": "string",
+              "description": "Entity's customized domain"
+            },
+            "homePageUrl": {
+              "type": "string",
+              "description": "URL of the entity's external homepage"
+            },
+            "logo": {
+              "type": "string",
+              "description": "URL of the entity's logo"
+            }
+          }
+        },
+        "AllowedAction": {
+          "type": "object",
+          "required": ["name", "allowed"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Action name"
+            },
+            "allowed": {
+              "type": "boolean",
+              "description": "Whether the action is allowed"
+            },
+            "description": {
+              "type": "string",
+              "description": "Action description"
+            },
+            "editableFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of editable fields for this action"
+            }
+          }
+        },
+        "EntityType": {
+          "type": "object",
+          "required": ["value", "option"],
+          "properties": {
+            "value": {
+              "type": "string",
+              "description": "Entity type value"
+            },
+            "option": {
+              "type": "string",
+              "description": "Entity type display name"
+            }
+          }
+        },
+        "Country": {
+          "type": "object",
+          "required": ["name", "displayName"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Country code"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "Country display name"
+            }
+          }
+        },
+        "Region": {
+          "type": "object",
+          "required": ["name", "displayName"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Region code"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "Region display name"
+            }
+          }
+        },
+        "Partner": {
+          "type": "object",
+          "required": ["id", "name"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Partner entity UUID"
+            },
+            "name": {
+              "type": "string",
+              "description": "Partner entity name"
+            }
+          }
+        },
+        "Error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Error code"
+            },
+            "message": {
+              "type": "string",
+              "description": "Error message"
+            },
+            "details": {
+              "type": "object",
+              "description": "Additional error details"
+            }
+          }
+        }
+      },
+      "responses": {
+        "BadRequest": {
+          "description": "Bad request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Error"
+              }
+            }
+          }
+        },
+        "Unauthorized": {
+          "description": "Unauthorized",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Error"
+              }
+            }
+          }
+        },
+        "Forbidden": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Error"
+              }
+            }
+          }
+        },
+        "NotFound": {
+          "description": "Not found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Error"
+              }
+            }
+          }
+        },
+        "Conflict": {
+          "description": "Conflict (e.g., duplicate entity)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Error"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
