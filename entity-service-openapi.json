@@ -11,12 +11,8 @@
     },
     "servers": [
       {
-        "url": "https://api.opengov.com",
-        "description": "Production server"
-      },
-      {
-        "url": "https://api-staging.opengov.com",
-        "description": "Staging server"
+        "url": "https://controlpanel.ogintegration.us",
+        "description": "Integration server"
       },
       {
         "url": "http://localhost:3000",
